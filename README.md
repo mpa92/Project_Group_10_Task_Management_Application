@@ -39,4 +39,3 @@ Generate basic analytics and reports to track team productivity and task complet
 ## License
 
 MIT
-
