@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './Tasks.css';
+import TaskGroup from './TaskGroup';
+import { mockTasks } from './mockData';
 
 const TaskBoard = () => {
   const [tasks, setTasks] = useState([]);
@@ -24,7 +26,8 @@ const TaskBoard = () => {
     //   }
     // };
     // fetchTasks();
-    
+
+    setTasks(mockTasks);
     setLoading(false);
   }, [filters]);
 
@@ -43,7 +46,6 @@ const TaskBoard = () => {
     <div className="task-board">
       <header className="task-board-header">
         <h1>Task Board</h1>
-        <Link to="/tasks/new" className="btn-primary">Create New Task</Link>
       </header>
 
       <div className="filters">
@@ -66,26 +68,14 @@ const TaskBoard = () => {
         </select>
       </div>
 
+      <Link to="/tasks/new" className="btn-create-task">Create New Task</Link>
+
       <div className="tasks-grid">
         {tasks.length === 0 ? (
           <p>No tasks found. Create your first task!</p>
         ) : (
-          tasks.map(task => (
-            <Link key={task.id} to={`/tasks/${task.id}`} className="task-card">
-              <h3>{task.title}</h3>
-              <p className="task-description">{task.description}</p>
-              <div className="task-meta">
-                <span className={`task-status task-status-${task.status}`}>
-                  {task.status}
-                </span>
-                <span className={`task-priority task-priority-${task.priority}`}>
-                  {task.priority}
-                </span>
-              </div>
-              {task.due_date && (
-                <p className="task-due-date">Due: {new Date(task.due_date).toLocaleDateString()}</p>
-              )}
-            </Link>
+          ["open","in_progress","completed"].map(status => (
+            <TaskGroup key={status} tasks={tasks} status={status} />
           ))
         )}
       </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './Tasks.css';
+import { getNextId, mockTasks } from './mockData';
 
 const TaskDetails = () => {
   const { id } = useParams();
@@ -32,6 +33,14 @@ const TaskDetails = () => {
     // };
     // fetchTask();
     
+    // Fetch from mock data
+    if (id !== 'new') {
+      setTask(mockTasks.find(t => t.id === parseInt(id)));
+      setFormData(mockTasks.find(t => t.id === parseInt(id)) || {});
+    } else {
+      setIsEditing(true);
+    }
+
     setLoading(false);
   }, [id]);
 
@@ -52,6 +61,19 @@ const TaskDetails = () => {
     // } catch (err) {
     //   console.error('Error updating task:', err);
     // }
+
+    // Mock creating/editing
+    if (id === 'new') {
+        formData.id = getNextId();
+        mockTasks.push(formData);
+        setTask(formData);
+        navigate(`/tasks/${formData.id}`);
+    } else {
+        mockTasks[mockTasks.findIndex(t => t.id === parseInt(id))] = formData;
+        setTask(formData);
+    }
+
+    setIsEditing(false);
     console.log('Task update:', formData);
   };
 
@@ -64,6 +86,14 @@ const TaskDetails = () => {
       // } catch (err) {
       //   console.error('Error deleting task:', err);
       // }
+
+      // Mock deletion
+      const index = mockTasks.findIndex(t => t.id === parseInt(id));
+      if (index > -1) {
+        mockTasks.splice(index, 1);
+      }
+
+      navigate('/tasks');
       console.log('Task deleted');
     }
   };
