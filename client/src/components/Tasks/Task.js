@@ -1,6 +1,6 @@
 import './Tasks.css';
 import { Link } from 'react-router-dom';
-import { getTaskStatusText } from './taskUtil';
+import { getTaskPriorityText, getTaskStatusText } from './taskUtil';
 
 function Task( { task } ) {
     return (
@@ -15,7 +15,7 @@ function Task( { task } ) {
                 </span>
                 */}
                 <span className={`task-priority task-priority-${task.priority}`}>
-                    {task.priority}
+                    {getTaskPriorityText(task.priority)}
                 </span>
                 </div>
                 {task.due_date && (

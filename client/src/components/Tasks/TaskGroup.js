@@ -2,8 +2,32 @@ import './Tasks.css';
 import Task from "./Task";
 import { getTaskStatusText } from "./taskUtil";
 
-function TaskGroup({ tasks, status }) {
-    const filteredTasks = tasks.filter(task => task.status === status);
+const statusMap = {
+    "high": 1,
+    "medium": 2,
+    "low": 3
+}
+
+function TaskGroup({ tasks, status, filters }) {
+    let filteredTasks = tasks.filter(task => task.status === status);
+
+    if (filters.priority !== 'all') {
+        filteredTasks = filteredTasks.filter(task => task.priority === filters.priority);
+    }
+
+    switch (filters.sortBy) {
+        case 'due_date':
+            filteredTasks.sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());       
+            break;
+
+        case 'priority':
+            filteredTasks.sort((a, b) => statusMap[a] - statusMap[b]);
+            break;
+
+        default:
+            break;
+    }
+
     return (
         <div className="task-group">
             <h2>{getTaskStatusText(status)}</h2>

@@ -10,3 +10,16 @@ export function getTaskStatusText(status) {
             return status;
     }
 }
+
+export function getTaskPriorityText(priority) {
+     switch (priority) {
+        case 'low':
+            return 'Low';
+        case 'medium':
+            return 'Medium';
+        case 'high':
+            return 'High';
+        default:
+            return priority;
+    }
+}
