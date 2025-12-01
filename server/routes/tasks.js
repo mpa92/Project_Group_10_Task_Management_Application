@@ -53,16 +53,19 @@ router.get('/:id', authenticateToken, async (req, res) => {
       WHERE t.id = $1
     `, [taskId]);
 
+    // ensure task is found
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Task not found' });
     }
 
     const task = result.rows[0];
 
-    if (!req.user.id === task.created_by && !req.user.id === task.assigned_to) {
+    // ensure user has permission to view the task
+    if (!req.user.userId === task.created_by && !req.user.id === task.assigned_to) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
+    // return the task
     return res.status(200).json(task);
   } catch (error) {
     console.error('Error in GET /api/tasks/:id:', error);
@@ -77,19 +80,55 @@ router.post('/', authenticateToken, async (req, res) => {
     const userId = req.user.userId;
     const { title, description, dueDate, priority, assignedTo, status } = req.body;
     
-    // TODO: Implement create task
-    // - Validate required fields (title is required)
-    // - Validate optional fields (priority: low/medium/high, status: open/in_progress/completed)
-    // - Set created_by to authenticated user
-    // - Save to database
-    // - Return created task
-    
-    res.status(501).json({ 
-      message: 'Create task endpoint - to be implemented',
-      receivedData: { title, description, dueDate, priority, assignedTo, status },
-      createdBy: userId,
-      note: 'This is a skeleton endpoint. See docs/ACCEPTANCE_CRITERIA.md for requirements.'
-    });
+    // Validate required fields
+    if (!title || title.trim() === '') {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+
+    // Validate optional fields
+    const validPriorities = ['low', 'medium', 'high'];
+    const validStatuses = ['open', 'in_progress', 'completed'];
+
+    if (priority && !validPriorities.includes(priority)) {
+      return res.status(400).json({ error: 'Invalid priority. Must be low, medium, or high' });
+    }
+
+    if (status && !validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status. Must be open, in_progress, or completed' });
+    }
+
+    // Insert task into database
+    const result = await pool.query(`
+      INSERT INTO tasks (title, description, due_date, priority, assigned_to, status, created_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *
+    `, [
+      title.trim(),
+      description || null,
+      dueDate || null,
+      priority || 'medium',
+      assignedTo || null,
+      status || 'open',
+      userId
+    ]);
+
+    const createdTask = result.rows[0];
+
+    // Fetch the task with user names
+    const taskWithNames = await pool.query(`
+      SELECT 
+        t.*,
+        creator.first_name AS creator_first_name,
+        creator.last_name AS creator_last_name,
+        assignee.first_name AS assignee_first_name,
+        assignee.last_name AS assignee_last_name
+      FROM tasks t
+      LEFT JOIN users creator ON t.created_by = creator.id
+      LEFT JOIN users assignee ON t.assigned_to = assignee.id
+      WHERE t.id = $1
+    `, [createdTask.id]);
+
+    return res.status(201).json(taskWithNames.rows[0]);
   } catch (error) {
     console.error('Error in POST /api/tasks:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -100,24 +139,82 @@ router.post('/', authenticateToken, async (req, res) => {
 // Expected body: { title?, description?, dueDate?, priority?, assignedTo?, status? }
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
-    const taskId = req.params.id;
+    const taskId = parseInt(req.params.id);
     const userId = req.user.userId;
-    const updateData = req.body;
+    const { title, description, dueDate, priority, assignedTo, status } = req.body;
     
-    // TODO: Implement update task
-    // - Verify task exists
-    // - Verify user has permission (created by or assigned to user)
-    // - Validate update fields
-    // - Update task in database
-    // - Return updated task
+    if (!taskId) {
+      return res.status(400).json({ error: 'Task ID is required' });
+    }
+
+    // Verify task exists
+    const taskResult = await pool.query('SELECT * FROM tasks WHERE id = $1', [taskId]);
     
-    res.status(501).json({ 
-      message: 'Update task endpoint - to be implemented',
-      taskId: taskId,
-      updateData: updateData,
-      updatedBy: userId,
-      note: 'This is a skeleton endpoint. See docs/ACCEPTANCE_CRITERIA.md for requirements.'
-    });
+    if (taskResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    const task = taskResult.rows[0];
+
+    // Verify user has permission (created by or assigned to user)
+    if (task.created_by !== userId && task.assigned_to !== userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Validate optional fields
+    const validPriorities = ['low', 'medium', 'high'];
+    const validStatuses = ['open', 'in_progress', 'completed'];
+
+    if (priority && !validPriorities.includes(priority)) {
+      return res.status(400).json({ error: 'Invalid priority. Must be low, medium, or high' });
+    }
+
+    if (status && !validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status. Must be open, in_progress, or completed' });
+    }
+
+    if (title !== undefined && title.trim() === '') {
+      return res.status(400).json({ error: 'Title cannot be empty' });
+    }
+
+    // Update task in database
+    const updateResult = await pool.query(`
+      UPDATE tasks
+      SET 
+        title = COALESCE($1, title),
+        description = COALESCE($2, description),
+        due_date = COALESCE($3, due_date),
+        priority = COALESCE($4, priority),
+        assigned_to = COALESCE($5, assigned_to),
+        status = COALESCE($6, status),
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $7
+      RETURNING *
+    `, [
+      title ? title.trim() : null,
+      description !== undefined ? description : null,
+      dueDate !== undefined ? dueDate : null,
+      priority || null,
+      assignedTo !== undefined ? assignedTo : null,
+      status || null,
+      taskId
+    ]);
+
+    // Fetch the updated task with user names
+    const taskWithNames = await pool.query(`
+      SELECT 
+        t.*,
+        creator.first_name AS creator_first_name,
+        creator.last_name AS creator_last_name,
+        assignee.first_name AS assignee_first_name,
+        assignee.last_name AS assignee_last_name
+      FROM tasks t
+      LEFT JOIN users creator ON t.created_by = creator.id
+      LEFT JOIN users assignee ON t.assigned_to = assignee.id
+      WHERE t.id = $1
+    `, [taskId]);
+
+    return res.status(200).json(taskWithNames.rows[0]);
   } catch (error) {
     console.error('Error in PUT /api/tasks/:id:', error);
     res.status(500).json({ error: 'Internal server error' });
