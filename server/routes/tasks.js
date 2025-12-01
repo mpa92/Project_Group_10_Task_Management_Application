@@ -74,11 +74,11 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // POST /api/tasks - Create a new task
-// Expected body: { title, description?, dueDate?, priority?, assignedTo?, status? }
+// Expected body: { title, description?, due_date?, priority?, assignedTo?, status? }
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { title, description, dueDate, priority, assignedTo, status } = req.body;
+    const { title, description, due_date, priority, assignedTo, status } = req.body;
     
     // Validate required fields
     if (!title || title.trim() === '') {
@@ -105,7 +105,7 @@ router.post('/', authenticateToken, async (req, res) => {
     `, [
       title.trim(),
       description || null,
-      dueDate || null,
+      due_date || null,
       priority || 'medium',
       assignedTo || null,
       status || 'open',
@@ -136,12 +136,12 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // PUT /api/tasks/:id - Update a task
-// Expected body: { title?, description?, dueDate?, priority?, assignedTo?, status? }
+// Expected body: { title?, description?, due_date?, priority?, assignedTo?, status? }
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const taskId = parseInt(req.params.id);
     const userId = req.user.userId;
-    const { title, description, dueDate, priority, assignedTo, status } = req.body;
+    const { title, description, due_date, priority, assignedTo, status } = req.body;
     
     if (!taskId) {
       return res.status(400).json({ error: 'Task ID is required' });
@@ -193,7 +193,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     `, [
       title ? title.trim() : null,
       description !== undefined ? description : null,
-      dueDate !== undefined ? dueDate : null,
+      due_date !== undefined ? due_date : null,
       priority || null,
       assignedTo !== undefined ? assignedTo : null,
       status || null,

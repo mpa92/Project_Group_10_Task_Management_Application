@@ -1,3 +1,4 @@
+import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './Tasks.css';
@@ -12,23 +13,31 @@ const TaskBoard = () => {
     priority: 'all',
     sortBy: 'due_date'
   });
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // TODO: Fetch tasks from API with filters
-    // const fetchTasks = async () => {
-    //   try {
-    //     const response = await axios.get('/api/tasks', { params: filters });
-    //     setTasks(response.data);
-    //   } catch (err) {
-    //     console.error('Error fetching tasks:', err);
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
-    // fetchTasks();
+    // Fetch tasks from API
+    const fetchTasks = async () => {
+      try {
+        const response = await axios.get('/api/tasks', {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        setTasks(response.data);
+      } catch (err) {
+        console.error('Error fetching tasks:', err);
+        setError('Failed to load tasks. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTasks();
 
     // Filter 
-    filters.priority && filters.priority === 'all' ? setTasks(mockTasks) : setTasks(mockTasks.filter(task => task.priority === filters.priority));
+    filters.priority && filters.priority === 'all' ? setTasks(tasks) : setTasks(tasks.filter(task => task.priority === filters.priority));
     setLoading(false);
   }, [filters]);
 
@@ -41,6 +50,10 @@ const TaskBoard = () => {
 
   if (loading) {
     return <div className="loading">Loading tasks...</div>;
+  }
+
+  if (error) {
+    return <div className="error">Error: {error}</div>;
   }
 
   return (

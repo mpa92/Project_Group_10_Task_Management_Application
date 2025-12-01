@@ -1,3 +1,4 @@
+import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './Tasks.css';
@@ -8,6 +9,8 @@ const TaskDetails = () => {
   const navigate = useNavigate();
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -19,30 +22,38 @@ const TaskDetails = () => {
   });
 
   useEffect(() => {
-    // TODO: Fetch task details from API
-    // const fetchTask = async () => {
-    //   try {
-    //     const response = await axios.get(`/api/tasks/${id}`);
-    //     setTask(response.data);
-    //     setFormData(response.data);
-    //   } catch (err) {
-    //     console.error('Error fetching task:', err);
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
-    // fetchTask();
-    
-    // Fetch from mock data
-    if (id !== 'new') {
-      setTask(mockTasks.find(t => t.id === parseInt(id)));
-      setFormData(mockTasks.find(t => t.id === parseInt(id)) || {});
-    } else {
+    // Skip this if creating a new task
+    if (id === 'new') {
+      setLoading(false);
       setIsEditing(true);
+      return;
     }
 
+    // Fetch task details from API if editing
+    const fetchTask = async () => {
+      try {
+        const response = await axios.get(`/api/tasks/${id}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        // extract date only from due date
+        response.data.due_date = response.data.due_date ? response.data.due_date.split('T')[0] : '';
+        
+        setTask(response.data);
+        setFormData(response.data);
+      } catch (err) {
+        console.error('Error fetching task:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTask();
+
     setLoading(false);
-  }, [id]);
+  }, [id, isEditing]);
 
   const handleChange = (e) => {
     setFormData({
@@ -53,48 +64,78 @@ const TaskDetails = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Implement update task API call
-    // try {
-    //   await axios.put(`/api/tasks/${id}`, formData);
-    //   setIsEditing(false);
-    //   // Refresh task data
-    // } catch (err) {
-    //   console.error('Error updating task:', err);
-    // }
 
-    // Mock creating/editing
     if (id === 'new') {
-        formData.id = getNextId();
-        mockTasks.push(formData);
-        setTask(formData);
-        navigate(`/tasks/${formData.id}`);
-    } else {
-        mockTasks[mockTasks.findIndex(t => t.id === parseInt(id))] = formData;
-        setTask(formData);
-    }
+      // Create post
+      try {
+        const response = await axios.post('/api/tasks', 
+          formData, 
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        );
 
-    setIsEditing(false);
-    console.log('Task update:', formData);
+        const newTaskId = response.data.id;
+        setErrorMessage(null);
+        navigate(`/tasks/${newTaskId}`);
+      } catch (err) {
+        console.error('Error editing task:', err);
+        setErrorMessage('Failed to create task. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // Edit post
+      try {
+        const response = await axios.put(`/api/tasks/${id}`, 
+          formData, 
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        );
+        console.log("Edit post response:", response.data);
+        
+        // Format the date from the response
+        response.data.due_date = response.data.due_date ? response.data.due_date.split('T')[0] : '';
+        
+        setFormData(response.data);
+        setTask(response.data);
+        setIsEditing(false);
+        setErrorMessage(null);
+        console.log('Task update:', formData);
+      } catch (err) {
+        console.error('Error editing task:', err);
+        setErrorMessage('Failed to edit task. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this task?')) {
-      // TODO: Implement delete task API call
-      // try {
-      //   await axios.delete(`/api/tasks/${id}`);
-      //   navigate('/tasks');
-      // } catch (err) {
-      //   console.error('Error deleting task:', err);
-      // }
-
-      // Mock deletion
-      const index = mockTasks.findIndex(t => t.id === parseInt(id));
-      if (index > -1) {
-        mockTasks.splice(index, 1);
+      // Delete post
+      try {
+        await axios.delete(`/api/tasks/${id}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        setErrorMessage(null);
+        navigate('/tasks');
+        console.log('Task deleted');
+      } catch (err) {
+        console.error('Error deleting task:', err);
+        setErrorMessage('Failed to delete task. Please try again.');
       }
-
-      navigate('/tasks');
-      console.log('Task deleted');
     }
   };
 
@@ -102,17 +143,23 @@ const TaskDetails = () => {
     return <div className="loading">Loading task details...</div>;
   }
 
+  if (error) {
+    return <div className="error">Error: {error}</div>;
+  }
+
   return (
     <div className="task-details">
       <header className="task-details-header">
         <button onClick={() => navigate('/tasks')} className="btn-back">← Back to Tasks</button>
         <div>
-          <button onClick={() => setIsEditing(!isEditing)} className="btn-secondary">
+          <button onClick={() => id === 'new' ? navigate('/tasks') : setIsEditing(!isEditing)} className="btn-secondary">
             {isEditing ? 'Cancel' : 'Edit'}
           </button>
           <button onClick={handleDelete} className="btn-danger">Delete</button>
         </div>
       </header>
+
+      {errorMessage && <div className="error-message">{errorMessage}</div>}
 
       {isEditing ? (
         <form onSubmit={handleSubmit} className="task-form">
@@ -184,7 +231,7 @@ const TaskDetails = () => {
             {task?.due_date && (
               <div className="info-item">
                 <strong>Due Date:</strong>
-                <span>{new Date(task.due_date).toLocaleDateString()}</span>
+                <span>{new Date(task.due_date + 'T00:00:00').toLocaleDateString()}</span>
               </div>
             )}
           </div>
