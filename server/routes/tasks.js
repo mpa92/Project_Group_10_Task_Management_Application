@@ -224,21 +224,33 @@ router.put('/:id', authenticateToken, async (req, res) => {
 // DELETE /api/tasks/:id - Delete a task
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
-    const taskId = req.params.id;
+    const taskId = parseInt(req.params.id);
     const userId = req.user.userId;
     
-    // TODO: Implement delete task
-    // - Verify task exists
-    // - Verify user has permission (only creator can delete)
-    // - Show confirmation (handled on frontend)
-    // - Delete task from database (or soft delete)
-    // - Handle cascade deletes for related data
+    if (!taskId) {
+      return res.status(400).json({ error: 'Task ID is required' });
+    }
+
+    // Verify task exists
+    const taskResult = await pool.query('SELECT * FROM tasks WHERE id = $1', [taskId]);
     
-    res.status(501).json({ 
-      message: 'Delete task endpoint - to be implemented',
-      taskId: taskId,
-      deletedBy: userId,
-      note: 'This is a skeleton endpoint. See docs/ACCEPTANCE_CRITERIA.md for requirements.'
+    if (taskResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    const task = taskResult.rows[0];
+
+    // Verify user has permission (only creator can delete)
+    if (task.created_by !== userId) {
+      return res.status(403).json({ error: 'Access denied. Only the task creator can delete this task.' });
+    }
+
+    // Delete task from database
+    await pool.query('DELETE FROM tasks WHERE id = $1', [taskId]);
+
+    return res.status(200).json({ 
+      message: 'Task deleted successfully',
+      taskId: taskId
     });
   } catch (error) {
     console.error('Error in DELETE /api/tasks/:id:', error);
