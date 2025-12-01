@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './Tasks.css';
 import TaskGroup from './TaskGroup';
-import { mockTasks } from './mockData';
 
 const TaskBoard = () => {
   const [tasks, setTasks] = useState([]);

@@ -2,7 +2,7 @@ import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './Tasks.css';
-import { getNextId, mockTasks } from './mockData';
+import { getTaskPriorityText, getTaskStatusText } from './taskUtil';
 
 const TaskDetails = () => {
   const { id } = useParams();
@@ -128,7 +128,7 @@ const TaskDetails = () => {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         });
-        
+
         setErrorMessage(null);
         navigate('/tasks');
         console.log('Task deleted');
@@ -219,13 +219,13 @@ const TaskDetails = () => {
             <div className="info-item">
               <strong>Status:</strong>
               <span className={`task-status task-status-${task?.status || 'open'}`}>
-                {task?.status || 'open'}
+                {getTaskStatusText(task?.status || 'open')}
               </span>
             </div>
             <div className="info-item">
               <strong>Priority:</strong>
               <span className={`task-priority task-priority-${task?.priority || 'medium'}`}>
-                {task?.priority || 'medium'}
+                {getTaskPriorityText(task?.priority || 'medium')}
               </span>
             </div>
             {task?.due_date && (
