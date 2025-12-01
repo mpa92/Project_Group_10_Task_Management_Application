@@ -1,3 +1,4 @@
+const pool = require('../config/db');
 const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
@@ -8,19 +9,22 @@ const { authenticateToken } = require('../middleware/auth');
 // Full implementation will be done by the team
 // ============================================
 
-// GET /api/tasks - Get all tasks (with filtering and sorting)
-// Expected query params: status, priority, assignedTo, dueDateFrom, dueDateTo, sortBy, sortOrder
+// GET /api/tasks - Get all tasks
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    // TODO: Implement get all tasks with filtering and sorting
-    // - Filter by status, priority, assigned user, due date range
-    // - Sort by due date, priority, created date, assigned user
-    // - Return only tasks created by or assigned to the authenticated user
-    
-    res.status(501).json({ 
-      message: 'Get all tasks endpoint - to be implemented',
-      note: 'This is a skeleton endpoint. See docs/ACCEPTANCE_CRITERIA.md for requirements.'
-    });
+    const tasks = await pool.query(`
+      SELECT 
+        t.*,
+        creator.first_name AS creator_first_name,
+        creator.last_name AS creator_last_name,
+        assignee.first_name AS assignee_first_name,
+        assignee.last_name AS assignee_last_name
+      FROM tasks t
+      LEFT JOIN users creator ON t.created_by = creator.id
+      LEFT JOIN users assignee ON t.assigned_to = assignee.id
+      ORDER BY t.created_at DESC
+    `);
+    res.status(200).json(tasks.rows);
   } catch (error) {
     console.error('Error in GET /api/tasks:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -30,18 +34,36 @@ router.get('/', authenticateToken, async (req, res) => {
 // GET /api/tasks/:id - Get a single task
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    const taskId = req.params.id;
+    const taskId = parseInt(req.params.id);
     
-    // TODO: Implement get single task
-    // - Verify task exists
-    // - Verify user has permission (created by or assigned to user)
-    // - Return task details with all fields
-    
-    res.status(501).json({ 
-      message: 'Get single task endpoint - to be implemented',
-      taskId: taskId,
-      note: 'This is a skeleton endpoint. See docs/ACCEPTANCE_CRITERIA.md for requirements.'
-    });
+    if (!taskId) {
+      return res.status(400).json({ error: 'Task ID is required' });
+    }
+
+    const result = await pool.query(`
+      SELECT 
+        t.*,
+        creator.first_name AS creator_first_name,
+        creator.last_name AS creator_last_name,
+        assignee.first_name AS assignee_first_name,
+        assignee.last_name AS assignee_last_name
+      FROM tasks t
+      LEFT JOIN users creator ON t.created_by = creator.id
+      LEFT JOIN users assignee ON t.assigned_to = assignee.id
+      WHERE t.id = $1
+    `, [taskId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    const task = result.rows[0];
+
+    if (!req.user.id === task.created_by && !req.user.id === task.assigned_to) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    return res.status(200).json(task);
   } catch (error) {
     console.error('Error in GET /api/tasks/:id:', error);
     res.status(500).json({ error: 'Internal server error' });
