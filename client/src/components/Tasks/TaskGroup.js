@@ -21,7 +21,7 @@ function TaskGroup({ tasks, status, filters }) {
             break;
 
         case 'priority':
-            filteredTasks.sort((a, b) => statusMap[a] - statusMap[b]);
+            filteredTasks.sort((a, b) => statusMap[a.priority] - statusMap[b.priority]);
             break;
 
         default:
