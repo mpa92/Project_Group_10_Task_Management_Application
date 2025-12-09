@@ -24,38 +24,16 @@ const TaskDetails = () => {
   });
 
   useEffect(() => {
-    // TODO: Fetch task details from API
-    const fetchTask = async () => {
-      try {
-        const response = await api.get(`/api/tasks/${id}`);
-        setTask(response.data);
-        setFormData(response.data);
-      } catch (err) {
-        console.error('Error fetching task:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTask();
-    
-    // Fetch from mock data
-    if (id !== 'new') {
-      setTask(mockTasks.find(t => t.id === parseInt(id)));
-      setFormData(mockTasks.find(t => t.id === parseInt(id)) || {});
-    } else {
+    // Fetch task details from API if editing
+    if (id === 'new') {
+      setLoading(false);
       setIsEditing(true);
       return;
     }
 
-    // Fetch task details from API if editing
     const fetchTask = async () => {
       try {
-        const response = await axios.get(`/api/tasks/${id}`, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+        const response = await api.get(`/tasks/${id}`);
 
         // extract date only from due date
         response.data.due_date = response.data.due_date ? response.data.due_date.split('T')[0] : '';
@@ -94,15 +72,7 @@ const TaskDetails = () => {
     if (id === 'new') {
       // Create post
       try {
-        const response = await axios.post('/api/tasks', 
-          formData, 
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-          }
-        );
+        const response = await api.post('/tasks', formData);
 
         const newTaskId = response.data.id;
         setErrorMessage(null);
@@ -117,15 +87,7 @@ const TaskDetails = () => {
     } else {
       // Edit post
       try {
-        const response = await axios.put(`/api/tasks/${id}`, 
-          formData, 
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-          }
-        );
+        const response = await api.put(`/tasks/${id}`, formData);
         console.log("Edit post response:", response.data);
         
         // Format the date from the response
@@ -149,12 +111,7 @@ const TaskDetails = () => {
     if (window.confirm('Are you sure you want to delete this task?')) {
       // Delete post
       try {
-        await axios.delete(`/api/tasks/${id}`, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+        await api.delete(`/tasks/${id}`);
 
         setErrorMessage(null);
         navigate('/tasks');
