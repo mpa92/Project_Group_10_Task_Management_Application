@@ -9,15 +9,13 @@ function Task( { task } ) {
                 <h3>{task.title}</h3>
                 <p className="task-description">{task.description}</p>
                 <div className="task-meta">
-                {/*
-                <span className={`task-status task-status-${task.status}`}>
-                    {getTaskStatusText(task.status)}
-                </span>
-                */}
-                <span className={`task-priority task-priority-${task.priority}`}>
-                    {getTaskPriorityText(task.priority)}
-                </span>
+                    <span className={`task-priority task-priority-${task.priority}`}>
+                        {getTaskPriorityText(task.priority)}
+                    </span>
                 </div>
+                {task.assigned_to && (
+                    <p><strong>Assigned to: </strong>{`${task.assignee_first_name} ${task.assignee_last_name}`}</p>
+                )}
                 {task.due_date && (
                     <p className="task-due-date">Due: {new Date(task.due_date).toLocaleDateString()}</p>
                 )}

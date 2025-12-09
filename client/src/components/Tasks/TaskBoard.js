@@ -1,8 +1,8 @@
+import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './Tasks.css';
 import TaskGroup from './TaskGroup';
-import { mockTasks } from './mockData';
 import api from '../../utils/api';
 
 const TaskBoard = () => {
@@ -13,12 +13,13 @@ const TaskBoard = () => {
     priority: 'all',
     sortBy: 'due_date'
   });
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     // TODO: Fetch tasks from API with filters
     const fetchTasks = async () => {
       try {
-        const response = await api.get('/api/tasks', { params: filters });
+        const response = await api.get('/tasks', { params: filters });
         setTasks(response.data);
       } catch (err) {
         console.error('Error fetching tasks:', err);
@@ -29,7 +30,7 @@ const TaskBoard = () => {
     fetchTasks();
 
     // Filter 
-    filters.priority && filters.priority === 'all' ? setTasks(mockTasks) : setTasks(mockTasks.filter(task => task.priority === filters.priority));
+    filters.priority && filters.priority === 'all' ? setTasks(tasks) : setTasks(tasks.filter(task => task.priority === filters.priority));
     setLoading(false);
   }, [filters]);
 
@@ -42,6 +43,10 @@ const TaskBoard = () => {
 
   if (loading) {
     return <div className="loading">Loading tasks...</div>;
+  }
+
+  if (error) {
+    return <div className="error">Error: {error}</div>;
   }
 
   return (

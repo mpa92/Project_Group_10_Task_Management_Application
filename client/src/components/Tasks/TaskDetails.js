@@ -1,7 +1,9 @@
+import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './Tasks.css';
-import { getNextId, mockTasks } from './mockData';
+import { getTaskPriorityText, getTaskStatusText } from './taskUtil';
+import UserSearch from '../Common/UserSearch';
 import api from '../../utils/api';
 
 const TaskDetails = () => {
@@ -9,6 +11,8 @@ const TaskDetails = () => {
   const navigate = useNavigate();
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -20,30 +24,33 @@ const TaskDetails = () => {
   });
 
   useEffect(() => {
-    // TODO: Fetch task details from API
+    // Fetch task details from API if editing
+    if (id === 'new') {
+      setLoading(false);
+      setIsEditing(true);
+      return;
+    }
+
     const fetchTask = async () => {
       try {
-        const response = await api.get(`/api/tasks/${id}`);
+        const response = await api.get(`/tasks/${id}`);
+
+        // extract date only from due date
+        response.data.due_date = response.data.due_date ? response.data.due_date.split('T')[0] : '';
+        
         setTask(response.data);
         setFormData(response.data);
       } catch (err) {
         console.error('Error fetching task:', err);
+        setError('Failed to load task details. Please try again later.');
       } finally {
         setLoading(false);
       }
     };
     fetchTask();
-    
-    // Fetch from mock data
-    if (id !== 'new') {
-      setTask(mockTasks.find(t => t.id === parseInt(id)));
-      setFormData(mockTasks.find(t => t.id === parseInt(id)) || {});
-    } else {
-      setIsEditing(true);
-    }
 
     setLoading(false);
-  }, [id]);
+  }, [id, isEditing]);
 
   const handleChange = (e) => {
     setFormData({
@@ -52,50 +59,67 @@ const TaskDetails = () => {
     });
   };
 
+  const setUserId = (userId) => {
+    setFormData({
+      ...formData,
+      assigned_to: userId
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Implement update task API call
-    try {
-      await api.put(`/api/tasks/${id}`, formData);
-      setIsEditing(false);
-      // Refresh task data
-    } catch (err) {
-      console.error('Error updating task:', err);
-    }
 
-    // Mock creating/editing
     if (id === 'new') {
-        formData.id = getNextId();
-        mockTasks.push(formData);
-        setTask(formData);
-        navigate(`/tasks/${formData.id}`);
-    } else {
-        mockTasks[mockTasks.findIndex(t => t.id === parseInt(id))] = formData;
-        setTask(formData);
-    }
+      // Create post
+      try {
+        const response = await api.post('/tasks', formData);
 
-    setIsEditing(false);
-    console.log('Task update:', formData);
+        const newTaskId = response.data.id;
+        setErrorMessage(null);
+        setIsEditing(false);
+        navigate(`/tasks/${newTaskId}`);
+      } catch (err) {
+        console.error('Error editing task:', err);
+        setError('Failed to create task. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // Edit post
+      try {
+        const response = await api.put(`/tasks/${id}`, formData);
+        console.log("Edit post response:", response.data);
+        
+        // Format the date from the response
+        response.data.due_date = response.data.due_date ? response.data.due_date.split('T')[0] : '';
+        
+        setFormData(response.data);
+        setTask(response.data);
+        setIsEditing(false);
+        setErrorMessage(null);
+        console.log('Task update:', formData);
+      } catch (err) {
+        console.error('Error editing task:', err);
+        setError('Failed to edit task. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this task?')) {
-      // TODO: Implement delete task API call
+      // Delete post
       try {
-        await api.delete(`/api/tasks/${id}`);
+        await api.delete(`/tasks/${id}`);
+
+        setErrorMessage(null);
         navigate('/tasks');
+        console.log('Task deleted');
       } catch (err) {
         console.error('Error deleting task:', err);
+        setErrorMessage('Failed to delete task. Please try again.');
       }
-
-      // Mock deletion
-      const index = mockTasks.findIndex(t => t.id === parseInt(id));
-      if (index > -1) {
-        mockTasks.splice(index, 1);
-      }
-
-      navigate('/tasks');
-      console.log('Task deleted');
     }
   };
 
@@ -103,17 +127,27 @@ const TaskDetails = () => {
     return <div className="loading">Loading task details...</div>;
   }
 
+  if (error) {
+    return <div className="error">Error: {error}</div>;
+  }
+
   return (
     <div className="task-details">
       <header className="task-details-header">
         <button onClick={() => navigate('/tasks')} className="btn-back">← Back to Tasks</button>
         <div>
-          <button onClick={() => setIsEditing(!isEditing)} className="btn-secondary">
-            {isEditing ? 'Cancel' : 'Edit'}
-          </button>
-          <button onClick={handleDelete} className="btn-danger">Delete</button>
+          {localStorage.getItem('token') && localStorage.getItem('user') && localStorage.getItem('user').includes(`"id":${task?.created_by}`) && (
+            <>
+              <button onClick={() => id === 'new' ? navigate('/tasks') : setIsEditing(!isEditing)} className="btn-secondary">
+                {isEditing ? 'Cancel' : 'Edit'}
+              </button>
+              <button onClick={handleDelete} className="btn-danger">Delete</button>
+            </>
+          )}
         </div>
       </header>
+
+      {errorMessage && <div className="error-message">{errorMessage}</div>}
 
       {isEditing ? (
         <form onSubmit={handleSubmit} className="task-form">
@@ -163,6 +197,10 @@ const TaskDetails = () => {
               onChange={handleChange}
             />
           </div>
+          <div className="form-group">
+            <label>Assign to</label>
+            <UserSearch initialSearchTerm={task?.assigned_to ? `${task.assignee_first_name} ${task.assignee_last_name}` : ''} userIdSetter={setUserId}/>
+          </div>
           <button type="submit" className="btn-primary">Save Changes</button>
         </form>
       ) : (
@@ -173,19 +211,31 @@ const TaskDetails = () => {
             <div className="info-item">
               <strong>Status:</strong>
               <span className={`task-status task-status-${task?.status || 'open'}`}>
-                {task?.status || 'open'}
+                {getTaskStatusText(task?.status || 'open')}
               </span>
             </div>
             <div className="info-item">
               <strong>Priority:</strong>
               <span className={`task-priority task-priority-${task?.priority || 'medium'}`}>
-                {task?.priority || 'medium'}
+                {getTaskPriorityText(task?.priority || 'medium')}
               </span>
             </div>
             {task?.due_date && (
               <div className="info-item">
                 <strong>Due Date:</strong>
-                <span>{new Date(task.due_date).toLocaleDateString()}</span>
+                <span>{new Date(task.due_date + 'T00:00:00').toLocaleDateString()}</span>
+              </div>
+            )}
+            {task?.assigned_to && (
+              <div className="info-item">
+                <strong>Assigned To:</strong>
+                <span>{`${task.assignee_first_name} ${task.assignee_last_name}`}</span>
+              </div>
+            )}
+            {task?.created_by && (
+              <div className="info-item">
+                <strong>Creator:</strong>
+                <span>{`${task.creator_first_name} ${task.creator_last_name}`}</span>
               </div>
             )}
           </div>
