@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../../utils/api';
 import './Dashboard.css';
 
@@ -53,9 +53,8 @@ const Dashboard = () => {
       <header className="dashboard-header">
         <h1>Dashboard</h1>
         <button 
-          className="btn-primary" 
+          className="btn-logout" 
           onClick={handleLogout}
-          style={{ background: '#e74c3c' }}
         >
           Logout
         </button>
@@ -64,16 +63,27 @@ const Dashboard = () => {
       <div className="dashboard-section">
         <h2>Welcome{user?.firstName ? `, ${user.firstName}` : ''}!</h2>
         <p>You have successfully logged in to the Task Management Application.</p>
-        <p>This is a basic dashboard. Full dashboard features will be implemented later.</p>
+        <p style={{ marginTop: '1rem', color: '#666' }}>
+          Manage your tasks, track progress, and stay organized.
+        </p>
       </div>
 
       <div className="dashboard-section">
         <h3>Quick Actions</h3>
-        <p>Task management features will be available here once CRUD operations are implemented.</p>
+        <div className="quick-actions">
+          <Link to="/tasks" className="action-card action-card-primary">
+            <h4>View Task Board</h4>
+            <p>See all your tasks organized by status</p>
+          </Link>
+          
+          <Link to="/tasks/new" className="action-card action-card-success">
+            <h4>Create New Task</h4>
+            <p>Add a new task to your board</p>
+          </Link>
+        </div>
       </div>
     </div>
   );
 };
 
 export default Dashboard;
-
