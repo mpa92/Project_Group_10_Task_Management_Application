@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './Tasks.css';
 import { getTaskPriorityText, getTaskStatusText } from './taskUtil';
+import UserSearch from '../Common/UserSearch';
 
 const TaskDetails = () => {
   const { id } = useParams();
@@ -46,6 +47,7 @@ const TaskDetails = () => {
         setFormData(response.data);
       } catch (err) {
         console.error('Error fetching task:', err);
+        setError('Failed to load task details. Please try again later.');
       } finally {
         setLoading(false);
       }
@@ -59,6 +61,13 @@ const TaskDetails = () => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
+    });
+  };
+
+  const setUserId = (userId) => {
+    setFormData({
+      ...formData,
+      assigned_to: userId
     });
   };
 
@@ -80,10 +89,11 @@ const TaskDetails = () => {
 
         const newTaskId = response.data.id;
         setErrorMessage(null);
+        setIsEditing(false);
         navigate(`/tasks/${newTaskId}`);
       } catch (err) {
         console.error('Error editing task:', err);
-        setErrorMessage('Failed to create task. Please try again later.');
+        setError('Failed to create task. Please try again later.');
       } finally {
         setLoading(false);
       }
@@ -111,7 +121,7 @@ const TaskDetails = () => {
         console.log('Task update:', formData);
       } catch (err) {
         console.error('Error editing task:', err);
-        setErrorMessage('Failed to edit task. Please try again later.');
+        setError('Failed to edit task. Please try again later.');
       } finally {
         setLoading(false);
       }
@@ -152,10 +162,14 @@ const TaskDetails = () => {
       <header className="task-details-header">
         <button onClick={() => navigate('/tasks')} className="btn-back">← Back to Tasks</button>
         <div>
-          <button onClick={() => id === 'new' ? navigate('/tasks') : setIsEditing(!isEditing)} className="btn-secondary">
-            {isEditing ? 'Cancel' : 'Edit'}
-          </button>
-          <button onClick={handleDelete} className="btn-danger">Delete</button>
+          {localStorage.getItem('token') && localStorage.getItem('user') && localStorage.getItem('user').includes(`"id":${task?.created_by}`) && (
+            <>
+              <button onClick={() => id === 'new' ? navigate('/tasks') : setIsEditing(!isEditing)} className="btn-secondary">
+                {isEditing ? 'Cancel' : 'Edit'}
+              </button>
+              <button onClick={handleDelete} className="btn-danger">Delete</button>
+            </>
+          )}
         </div>
       </header>
 
@@ -209,6 +223,10 @@ const TaskDetails = () => {
               onChange={handleChange}
             />
           </div>
+          <div className="form-group">
+            <label>Assign to</label>
+            <UserSearch initialSearchTerm={task?.assigned_to ? `${task.assignee_first_name} ${task.assignee_last_name}` : ''} userIdSetter={setUserId}/>
+          </div>
           <button type="submit" className="btn-primary">Save Changes</button>
         </form>
       ) : (
@@ -232,6 +250,18 @@ const TaskDetails = () => {
               <div className="info-item">
                 <strong>Due Date:</strong>
                 <span>{new Date(task.due_date + 'T00:00:00').toLocaleDateString()}</span>
+              </div>
+            )}
+            {task?.assigned_to && (
+              <div className="info-item">
+                <strong>Assigned To:</strong>
+                <span>{`${task.assignee_first_name} ${task.assignee_last_name}`}</span>
+              </div>
+            )}
+            {task?.created_by && (
+              <div className="info-item">
+                <strong>Creator:</strong>
+                <span>{`${task.creator_first_name} ${task.creator_last_name}`}</span>
               </div>
             )}
           </div>

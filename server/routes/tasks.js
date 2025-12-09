@@ -78,7 +78,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { title, description, due_date, priority, assignedTo, status } = req.body;
+    const { title, description, due_date, priority, assigned_to, status } = req.body;
     
     // Validate required fields
     if (!title || title.trim() === '') {
@@ -107,7 +107,7 @@ router.post('/', authenticateToken, async (req, res) => {
       description || null,
       due_date || null,
       priority || 'medium',
-      assignedTo || null,
+      assigned_to || null,
       status || 'open',
       userId
     ]);
@@ -141,7 +141,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const taskId = parseInt(req.params.id);
     const userId = req.user.userId;
-    const { title, description, due_date, priority, assignedTo, status } = req.body;
+    const { title, description, due_date, priority, assigned_to, status } = req.body;
     
     if (!taskId) {
       return res.status(400).json({ error: 'Task ID is required' });
@@ -195,7 +195,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
       description !== undefined ? description : null,
       due_date !== undefined ? due_date : null,
       priority || null,
-      assignedTo !== undefined ? assignedTo : null,
+      assigned_to !== undefined ? assigned_to : null,
       status || null,
       taskId
     ]);
