@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import './Tasks.css';
 import { getTaskPriorityText, getTaskStatusText } from './taskUtil';
 import UserSearch from '../Common/UserSearch';
+import api from '../../utils/api';
 
 const TaskDetails = () => {
   const { id } = useParams();
@@ -23,9 +24,25 @@ const TaskDetails = () => {
   });
 
   useEffect(() => {
-    // Skip this if creating a new task
-    if (id === 'new') {
-      setLoading(false);
+    // TODO: Fetch task details from API
+    const fetchTask = async () => {
+      try {
+        const response = await api.get(`/api/tasks/${id}`);
+        setTask(response.data);
+        setFormData(response.data);
+      } catch (err) {
+        console.error('Error fetching task:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTask();
+    
+    // Fetch from mock data
+    if (id !== 'new') {
+      setTask(mockTasks.find(t => t.id === parseInt(id)));
+      setFormData(mockTasks.find(t => t.id === parseInt(id)) || {});
+    } else {
       setIsEditing(true);
       return;
     }

@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './Tasks.css';
 import TaskGroup from './TaskGroup';
+import { mockTasks } from './mockData';
+import api from '../../utils/api';
 
 const TaskBoard = () => {
   const [tasks, setTasks] = useState([]);
@@ -15,24 +17,17 @@ const TaskBoard = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Fetch tasks from API
+    // TODO: Fetch tasks from API with filters
     const fetchTasks = async () => {
       try {
-        const response = await axios.get('/api/tasks', {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+        const response = await api.get('/api/tasks', { params: filters });
         setTasks(response.data);
       } catch (err) {
         console.error('Error fetching tasks:', err);
-        setError('Failed to load tasks. Please try again later.');
       } finally {
         setLoading(false);
       }
     };
-
     fetchTasks();
 
     // Filter 
