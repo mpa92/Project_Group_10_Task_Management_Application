@@ -53,6 +53,9 @@ const TaskBoard = () => {
     <div className="task-board">
       <header className="task-board-header">
         <h1>Task Board</h1>
+        <Link to="/dashboard" className="btn-back-dashboard">
+          Back to Dashboard
+        </Link>
       </header>
 
       <div className="filters">
