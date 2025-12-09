@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import './Tasks.css';
 import TaskGroup from './TaskGroup';
 import { mockTasks } from './mockData';
+import api from '../../utils/api';
 
 const TaskBoard = () => {
   const [tasks, setTasks] = useState([]);
@@ -15,17 +16,17 @@ const TaskBoard = () => {
 
   useEffect(() => {
     // TODO: Fetch tasks from API with filters
-    // const fetchTasks = async () => {
-    //   try {
-    //     const response = await axios.get('/api/tasks', { params: filters });
-    //     setTasks(response.data);
-    //   } catch (err) {
-    //     console.error('Error fetching tasks:', err);
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
-    // fetchTasks();
+    const fetchTasks = async () => {
+      try {
+        const response = await api.get('/api/tasks', { params: filters });
+        setTasks(response.data);
+      } catch (err) {
+        console.error('Error fetching tasks:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTasks();
 
     // Filter 
     filters.priority && filters.priority === 'all' ? setTasks(mockTasks) : setTasks(mockTasks.filter(task => task.priority === filters.priority));

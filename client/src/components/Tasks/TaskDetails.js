@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './Tasks.css';
 import { getNextId, mockTasks } from './mockData';
+import api from '../../utils/api';
 
 const TaskDetails = () => {
   const { id } = useParams();
@@ -20,18 +21,18 @@ const TaskDetails = () => {
 
   useEffect(() => {
     // TODO: Fetch task details from API
-    // const fetchTask = async () => {
-    //   try {
-    //     const response = await axios.get(`/api/tasks/${id}`);
-    //     setTask(response.data);
-    //     setFormData(response.data);
-    //   } catch (err) {
-    //     console.error('Error fetching task:', err);
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
-    // fetchTask();
+    const fetchTask = async () => {
+      try {
+        const response = await api.get(`/api/tasks/${id}`);
+        setTask(response.data);
+        setFormData(response.data);
+      } catch (err) {
+        console.error('Error fetching task:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTask();
     
     // Fetch from mock data
     if (id !== 'new') {
@@ -54,13 +55,13 @@ const TaskDetails = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     // TODO: Implement update task API call
-    // try {
-    //   await axios.put(`/api/tasks/${id}`, formData);
-    //   setIsEditing(false);
-    //   // Refresh task data
-    // } catch (err) {
-    //   console.error('Error updating task:', err);
-    // }
+    try {
+      await api.put(`/api/tasks/${id}`, formData);
+      setIsEditing(false);
+      // Refresh task data
+    } catch (err) {
+      console.error('Error updating task:', err);
+    }
 
     // Mock creating/editing
     if (id === 'new') {
@@ -80,12 +81,12 @@ const TaskDetails = () => {
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this task?')) {
       // TODO: Implement delete task API call
-      // try {
-      //   await axios.delete(`/api/tasks/${id}`);
-      //   navigate('/tasks');
-      // } catch (err) {
-      //   console.error('Error deleting task:', err);
-      // }
+      try {
+        await api.delete(`/api/tasks/${id}`);
+        navigate('/tasks');
+      } catch (err) {
+        console.error('Error deleting task:', err);
+      }
 
       // Mock deletion
       const index = mockTasks.findIndex(t => t.id === parseInt(id));
