@@ -3,13 +3,19 @@
   "version": "1.0.0",
   "description": "Task Management Application using PERN stack",
   "main": "server/index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "cd server && npm run dev",
     "client": "cd client && npm start",
     "install-server": "cd server && npm install",
     "install-client": "cd client && npm install",
-    "install-all": "npm install && npm run install-server && npm run install-client"
+    "install-all": "npm install && npm run install-server && npm run install-client",
+    "build": "cd client && npm install && npm run build",
+    "start": "cd server && node index.js",
+    "railway:build": "npm run install-server && npm run build"
   },
   "keywords": [
     "task-management",
