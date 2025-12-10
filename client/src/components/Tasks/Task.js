@@ -1,6 +1,6 @@
 import './Tasks.css';
 import { Link } from 'react-router-dom';
-import { getTaskPriorityText, getTaskStatusText } from './taskUtil';
+import { getTaskPriorityText } from './taskUtil';
 
 function Task( { task } ) {
     return (
