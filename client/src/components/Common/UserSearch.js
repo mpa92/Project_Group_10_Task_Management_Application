@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../../utils/api';
-import axios from 'axios';
 import './UserSearch.css';
 
 const UserSearch = ({initialSearchTerm, userIdSetter}) => {
@@ -9,7 +8,6 @@ const UserSearch = ({initialSearchTerm, userIdSetter}) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isFocused, setIsFocused] = useState(false);
-    const [selectedUser, setSelectedUser] = useState(null);
     const wrapperRef = useRef(null);
 
     useEffect(() => {
@@ -56,7 +54,6 @@ const UserSearch = ({initialSearchTerm, userIdSetter}) => {
     }, [searchTerm, isFocused]);
 
     const handleSelectUser = (user) => {
-        setSelectedUser(user);
         setSearchTerm(`${user.first_name} ${user.last_name}`);
         userIdSetter(user.id);
         setIsFocused(false);
@@ -65,7 +62,6 @@ const UserSearch = ({initialSearchTerm, userIdSetter}) => {
 
     const handleInputChange = (e) => {
         setSearchTerm(e.target.value);
-        setSelectedUser(null);
         if (!e.target.value) {
             userIdSetter(null);
         }

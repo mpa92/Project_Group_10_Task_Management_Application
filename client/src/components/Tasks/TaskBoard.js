@@ -1,5 +1,4 @@
-import axios from 'axios';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import './Tasks.css';
 import TaskGroup from './TaskGroup';
@@ -15,24 +14,22 @@ const TaskBoard = () => {
   });
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    // TODO: Fetch tasks from API with filters
-    const fetchTasks = async () => {
-      try {
-        const response = await api.get('/tasks', { params: filters });
-        setTasks(response.data);
-      } catch (err) {
-        console.error('Error fetching tasks:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTasks();
-
-    // Filter 
-    filters.priority && filters.priority === 'all' ? setTasks(tasks) : setTasks(tasks.filter(task => task.priority === filters.priority));
-    setLoading(false);
+  const fetchTasks = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/tasks', { params: filters });
+      setTasks(response.data);
+    } catch (err) {
+      console.error('Error fetching tasks:', err);
+      setError('Failed to load tasks');
+    } finally {
+      setLoading(false);
+    }
   }, [filters]);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
 
   const handleFilterChange = (e) => {
     setFilters({
